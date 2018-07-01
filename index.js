@@ -20,7 +20,7 @@ PIXI.loader
     .add("tank.png")
     .load(setup);
 
-let tank, tank2, state;
+let tank, tank2, state, stateText, actionsText;
 
 function setupState() {
     state = {
@@ -49,7 +49,13 @@ function playerVote(player, action) {
     console.log(player)
     console.log(action)
     console.log(state.actions[player])
+
     state.actions[player][action].f();
+
+    computePossibleActions(0);
+    computePossibleActions(1);
+
+    state.turn++;
 }
 
 function canMove(player, direction) {
@@ -61,7 +67,7 @@ function canMove(player, direction) {
         return true;
     }
 
-    if (x > 0 && direction == "right") {
+    if (x > 0 && direction == "left") {
         return true;
     }
 
@@ -69,7 +75,7 @@ function canMove(player, direction) {
         return true;
     }
 
-    if (y < 14 && direction == "down") {
+    if (y < 13 && direction == "down") {
         return true;
     }
 
@@ -115,6 +121,25 @@ function renderPlayers() {
     tank2.y = state.players[1].pos[1] * 64;
 }
 
+function renderStateText() {
+    stateText.text = "Turn " + state.turn;
+}
+
+function renderActionsText() {
+    let currentPlayer = state.turn % state.players.length
+    let x = state.players[currentPlayer].pos[0];
+    let y = state.players[currentPlayer].pos[1];
+    actionsText.text = "Player " + currentPlayer + "(x:" + x + "y:" + y + ")";
+    actionsText.text += "\n"
+
+    let letters = ["A", "B", "C", "D"];
+
+    for(var i=0; i<state.actions[currentPlayer].length; i++) {
+        let a = state.actions[currentPlayer][i];
+        actionsText.text += letters[i] + ":" + a.text +"\n"
+    }
+
+}
 
 function setup() {
     setupState();
@@ -138,6 +163,7 @@ function setup() {
 
     tank = new PIXI.Sprite(
         PIXI.loader.resources["tank.png"].texture
+
     );
 
     tank.width = 64;
@@ -171,12 +197,19 @@ function setup() {
     //     dropShadowDistance: 6,
     // });
 
-    let text = new PIXI.Text('Turn: 0',{fontFamily : 'Arial', fontSize: 24, fill : 0xffffff, align : 'center'});
+    stateText = new PIXI.Text('Turn: 0',{fontFamily : 'Arial', fontSize: 24, fill : 0xffffff, align : 'center'});
 
-    text.x = 15*64 + 100
-    text.y = 0
+    stateText.x = 15*64 + 100
+    stateText.y = 0
 
-    app.stage.addChild(text);;
+    app.stage.addChild(stateText);;
+
+    actionsText = new PIXI.Text("Actions\n",{fontFamily : 'Arial', fontSize: 24, fill : 0xffffff, align : 'center'});
+
+    actionsText.x = 15*64 + 100
+    actionsText.y = 64;
+
+    app.stage.addChild(actionsText);
 
     let keyObject = keyboard(65);
     keyObject.press = () => {
@@ -210,14 +243,11 @@ function setup() {
     app.ticker.add(function(delta) { gameLoop(delta) });
 }
 
-
-
-
 function gameLoop(delta){
     renderPlayers()
+    renderStateText();
+    renderActionsText();
 }
-
-
 
 function keyboard(keyCode) {
     let key = {};
