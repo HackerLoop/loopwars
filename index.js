@@ -58,10 +58,39 @@ function playerVote(player, action) {
     state.turn++;
 }
 
+function hasPlayer(x,y) {
+    for(var i=0; i<state.players.length; i++) {
+        if(state.players[i].pos[0] == x && state.players[i].pos[1] == y) {
+            return true
+        }
+    }
+
+    return false;
+}
+
 function canMove(player, direction) {
     let p = state.players[player];
     let x = p.pos[0];
     let y = p.pos[1];
+
+    switch(direction) {
+    case "right":
+        if(hasPlayer(x+1, y)) {
+            return false;
+        }
+    case "left":
+        if(hasPlayer(x-1, y)) {
+            return false;
+        }
+    case "down":
+        if(hasPlayer(x, y+1)) {
+            return false;
+        }
+    case "up":
+        if(hasPlayer(x, y-1)) {
+            return false;
+        }
+    }
 
     if (x < 15 && direction == "right") {
         return true;
@@ -80,6 +109,10 @@ function canMove(player, direction) {
     }
 
     return false;
+}
+
+function canAttack(player, direction) {
+    return canMove(player, direction)
 }
 
 function computePossibleActions(player) {
@@ -163,7 +196,6 @@ function setup() {
 
     tank = new PIXI.Sprite(
         PIXI.loader.resources["tank.png"].texture
-
     );
 
     tank.width = 64;
