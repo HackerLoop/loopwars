@@ -15,9 +15,11 @@ document.body.appendChild(app.view);
 
 const GRASS = 0;
 
+
 PIXI.loader
     .add("grass.png")
     .add("tank.png")
+    .add("bomb.png")
     .load(setup);
 
 let tank, tank2, state, stateText, actionsText;
@@ -59,13 +61,17 @@ function playerVote(player, action) {
 }
 
 function hasPlayer(x,y) {
+    !!findPlayer(x,y)
+}
+
+function findPlayer(x,y) {
     for(var i=0; i<state.players.length; i++) {
         if(state.players[i].pos[0] == x && state.players[i].pos[1] == y) {
-            return true
+            return state.players[i];
         }
     }
 
-    return false;
+    return null;
 }
 
 function canMove(player, direction) {
@@ -112,6 +118,29 @@ function canMove(player, direction) {
 }
 
 function canAttack(player, direction) {
+    let p = state.players[player];
+    let x = p.pos[0];
+    let y = p.pos[1];
+
+    switch(direction) {
+    case "right":
+        if(hasPlayer(x+1, y)) {
+            return true;
+        }
+    case "left":
+        if(hasPlayer(x-1, y)) {
+            return true;
+        }
+    case "down":
+        if(hasPlayer(x, y+1)) {
+            return true;
+        }
+    case "up":
+        if(hasPlayer(x, y-1)) {
+            return true;
+        }
+    }
+
     return canMove(player, direction)
 }
 
@@ -122,28 +151,98 @@ function computePossibleActions(player) {
 
     if (canMove(player, "up")) {
         let f = function() {
-            state.players[player].pos[1]--
+            state.players[player].pos[1]--;
+            attack(player, "up");
         };
         state.actions[player].push({"text": "Up", f});
     }
     if (canMove(player, "down")) {
         let f = function() {
-            state.players[player].pos[1]++
+            state.players[player].pos[1]++;
+            attack(player, "down");
         };
         state.actions[player].push({"text": "Down", f});
     }
     if (canMove(player, "left")) {
         let f = function() {
-            state.players[player].pos[0]--
+            state.players[player].pos[0]--;
+            attack(player, "left");
         };
         state.actions[player].push({"text": "Left", f});
     }
     if (canMove(player, "right")) {
         let f = function() {
-            state.players[player].pos[0]++
+            state.players[player].pos[0]++;
+            attack(player, "right");
         };
         state.actions[player].push({"text": "Right", f});
     }
+}
+
+function attack(player, direction) {
+    bomb1 = new PIXI.Sprite(
+        PIXI.loader.resources["bomb.png"].texture
+    );
+
+    bomb2 = new PIXI.Sprite(
+        PIXI.loader.resources["bomb.png"].texture
+    );
+
+    let p = state.players[player];
+    let x = p.pos[0];
+    let y = p.pos[1];
+
+    switch(direction) {
+    case "left":
+        bomb1.x = x-1;
+        bomb1.y = y;
+        bomb2.x = x-2;
+        bomb1.y = y;
+        break;
+    case "right":
+        bomb1.x = x+1;
+        bomb1.y = y;
+        bomb2.x = x+2;
+        bomb1.y = y;
+        break;
+    case "up":
+        bomb1.x = x;
+        bomb1.y = y-1;
+        bomb2.x = x;
+        bomb1.y = y-2;
+        break;
+    case "down":
+        bomb1.x = x;
+        bomb1.y = y+1;
+        bomb2.x = x;
+        bomb1.y = y+2;
+        break;
+    }
+
+    let other = findPlayer(bomb1.x, bomb1.y);
+    if(other) {
+        other.health--
+    }
+
+    other = findPlayer(bomb2.x, bomb2.y);
+    if(other) {
+        other.health--
+    }
+
+    // so crappy, get the real x and y (pixels, not grid)
+    bomb1.x *= 64;
+    bomb1.y *= 64;
+    bomb1.width = 64;
+    bomb1.height = 64;
+    bomb2.x *= 64;
+    bomb2.y *= 64;
+    bomb2.width = 64;
+    bomb2.height = 64;
+
+    app.stage.addChild(bomb1);
+    app.stage.addChild(bomb2);
+
+    return;
 }
 
 function renderPlayers() {
@@ -162,7 +261,9 @@ function renderActionsText() {
     let currentPlayer = state.turn % state.players.length
     let x = state.players[currentPlayer].pos[0];
     let y = state.players[currentPlayer].pos[1];
-    actionsText.text = "Player " + currentPlayer + "(x:" + x + "y:" + y + ")";
+    let hp = state.players[currentPlayer].health;
+
+    actionsText.text = "Player " + currentPlayer + "(x:" + x + "y:" + y + ")" + " health: " + hp;
     actionsText.text += "\n"
 
     let letters = ["A", "B", "C", "D"];
@@ -200,8 +301,13 @@ function setup() {
 
     tank.width = 64;
     tank.height = 64;
-    tank.x = 0;
-    tank.y = 0;
+    // tank.x = 0;
+    // tank.y = 0;
+    // temp stuff to test attack
+    state.players[0].pos[0] = 14;
+    state.players[0].pos[1] = 12;
+    tank.x = 14*54;
+    tank.y = 12*54;
 
     app.stage.addChild(tank);
 
